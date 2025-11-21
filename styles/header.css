@@ -4,6 +4,7 @@
         justify-content: space-between;
         gap: 16px;
         margin: auto;
+        height: 80px;
         max-width: 1200px;
         padding: 8px 32px;
 
@@ -35,9 +36,11 @@
             }
         }
 
-        &:has(.search:focus-within) {
-            > :last-child {
-                display: none;
+        @media (max-width: 800px) {
+            &:has(.search:focus-within) {
+                > :last-child {
+                    display: none;
+                }
             }
         }
     }

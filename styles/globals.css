@@ -77,6 +77,10 @@ html {
     color-scheme: dark;
 }
 
+::selection {
+    background-color: color-mix(in srgb, var(--accent-400) 40%, transparent);
+}
+
 *,
 *::before,
 *::after {
@@ -106,6 +110,7 @@ main {
     width: 100%;
     margin: auto;
     padding: 16px;
+    padding-bottom: 32px;
 }
 
 a {

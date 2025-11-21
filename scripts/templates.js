@@ -12,7 +12,12 @@ const templates = {
                         <img src="/assets/mascot/icon.svg" alt="Pixo" />
                         <span>JSP</span>
                     </a>
-                    <form action="/search.html" class="search">
+                    <form class="search" onsubmit="
+    event.preventDefault();
+    const url = new window.URL(window.location.href);
+    url.searchParams.set('q', this.querySelector('input[name=q]').value);
+    window.location.href = url.toString();
+">
                         <button
                             class="mobile-search-toggle"
                             onclick="this.nextElementSibling.focus()"
@@ -158,8 +163,11 @@ const templates = {
     'home-review': (elm) => {
         const reviewCardElm = document.createElement('div');
         reviewCardElm.innerHTML = `
-            <img src="${elm.dataset.imgsrc}" alt="${elm.dataset.name}">
-            <div class="name">${elm.dataset.name}</div>
+
+            <div class="author">
+                <img src="${elm.dataset.imgsrc}" alt="${elm.dataset.name}">
+                <div class="name">${elm.dataset.name}</div>
+            </div>
             <div class="stars">
                 <i data-lucide="star" fill="currentColor"></i>
                 <i data-lucide="star" fill="currentColor"></i>
