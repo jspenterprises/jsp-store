@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>JSP Store</title>
+        <link rel="shortcut icon" href="/assets/mascot/icon.svg" type="image/svg+xml" />
+        <link rel="stylesheet" href="/styles/globals.css" />
+        <link rel="stylesheet" href="/styles/home.css" />
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <script type="module" src="/scripts/globals.js" defer></script>
+    </head>
+    <body>
+        <template data-template="header"></template>
+        <main>
+            <section>
+                <h2>CATEGORY</h2>
+                <ul class="categories"></ul>
+                <template data-template="product-categories"></template>
+            </section>
+            <section>
+                <h2>RECOMMENDED</h2>
+                <template data-template="home-recommended"></template>
+            </section>
+            <section>
+                <h2>REVIEWS</h2>
+                <div class="reviews">
+                    <template
+                        data-template="home-review"
+                        data-name="Lorem ipsum"
+                        data-message="Yes"
+                        data-imgsrc="/assets/favicon.ico"
+                    ></template>
+                </div>
+            </section>
+        </main>
+        <template data-template="footer"></template>
+    </body>
+</html>

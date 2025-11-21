@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Paste → 100×100 WebP (cover & background remove)</title>
+        <style>
+            :root {
+                --bg: #0f1724;
+                --card: #0b1220;
+                --muted: #9aa7b2;
+                --accent: #06b6d4;
+                color-scheme: dark;
+            }
+            html,
+            body {
+                height: 100%;
+            }
+            body {
+                margin: 0;
+                font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial;
+                background: linear-gradient(180deg, var(--bg), #071021);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
+                box-sizing: border-box;
+            }
+
+            .app {
+                width: 980px;
+                max-width: 100%;
+                background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+                border-radius: 12px;
+                padding: 20px;
+                box-shadow: 0 8px 30px rgba(2, 6, 23, 0.7);
+                color: #e6eef3;
+            }
+
+            h1 {
+                margin: 0 0 10px;
+                font-size: 18px;
+            }
+            p.lead {
+                margin: 0 0 18px;
+                color: var(--muted);
+                font-size: 13px;
+            }
+
+            .dropzone {
+                border: 1px dashed rgba(255, 255, 255, 0.06);
+                background: linear-gradient(180deg, rgba(255, 255, 255, 0.01), transparent);
+                padding: 18px;
+                border-radius: 10px;
+                display: flex;
+                gap: 18px;
+                align-items: center;
+            }
+
+            .instructions {
+                flex: 1;
+            }
+            .instructions p {
+                margin: 6px 0;
+                color: var(--muted);
+                font-size: 13px;
+            }
+            .sample {
+                width: 160px;
+                height: 160px;
+                border-radius: 8px;
+                background: #061018;
+                display: grid;
+                place-items: center;
+                overflow: hidden;
+                border: 1px solid rgba(255, 255, 255, 0.03);
+            }
+            .controls {
+                display: flex;
+                gap: 8px;
+                flex-direction: row;
+                align-items: center;
+                margin-top: 10px;
+            }
+            .controls label {
+                font-size: 13px;
+                color: var(--muted);
+            }
+            input[type='range'] {
+                accent-color: var(--accent);
+            }
+            button {
+                background: var(--accent);
+                border: 0;
+                padding: 8px 12px;
+                border-radius: 8px;
+                color: #022429;
+                cursor: pointer;
+                font-weight: 600;
+            }
+            button.secondary {
+                background: transparent;
+                border: 1px solid rgba(255, 255, 255, 0.06);
+                color: var(--muted);
+            }
+            .result-row {
+                display: flex;
+                gap: 14px;
+                align-items: center;
+                margin-top: 18px;
+            }
+            .result-preview {
+                width: 100px;
+                height: 100px;
+                border-radius: 6px;
+                background: #04202a;
+                display: grid;
+                place-items: center;
+                overflow: hidden;
+                border: 1px solid rgba(255, 255, 255, 0.03);
+            }
+            .meta {
+                font-size: 13px;
+                color: var(--muted);
+            }
+            footer {
+                margin-top: 14px;
+                color: var(--muted);
+                font-size: 12px;
+            }
+            .hidden {
+                display: none;
+            }
+            .error {
+                color: #ff8b8b;
+                font-size: 13px;
+                margin-top: 8px;
+            }
+            a.link {
+                color: var(--accent);
+                text-decoration: none;
+            }
+            .small {
+                font-size: 12px;
+                color: var(--muted);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="app" id="app">
+            <h1>Paste an image (Ctrl/Cmd+V) — auto convert to 100×100 WebP</h1>
+            <p class="lead">
+                Paste an image file or an image URL anywhere on the page. The image will be
+                center-cropped using <code>cover</code>, resized to 100×100, background removed
+                (simple color-threshold), and shown as a WebP with a Download button.
+            </p>
+
+            <div class="dropzone" id="dropzone" tabindex="0">
+                <div class="instructions">
+                    <p>
+                        <strong>Try it now:</strong> open an image in another tab and press
+                        <kbd>Ctrl/Cmd+C</kbd> then focus this page and press <kbd>Ctrl/Cmd+V</kbd>.
+                        You can also copy an image URL (right-click → Copy image address) and paste.
+                    </p>
+                    <div class="controls" style="align-items: center">
+                        <label for="threshold">Background removal threshold</label>
+                        <input
+                            id="threshold"
+                            type="range"
+                            min="0"
+                            max="180"
+                            value="60"
+                            style="width: 220px; margin-left: 8px"
+                        />
+                        <span id="thVal" class="small" style="margin-left: 8px">60</span>
+                        <button id="clear" class="secondary">Clear</button>
+                    </div>
+                    <p class="small">
+                        Threshold: higher = more pixels considered background (useful for slightly
+                        noisy backgrounds). Works best for reasonably uniform backgrounds.
+                    </p>
+                    <div class="error hidden" id="error"></div>
+                </div>
+
+                <div class="sample" id="sample">
+                    <div style="text-align: center; color: var(--muted); padding: 8px">
+                        <div style="font-size: 13px; margin-bottom: 6px">Result preview</div>
+                        <div style="font-size: 11px; color: rgba(255, 255, 255, 0.18)">
+                            100 × 100
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-row hidden" id="resultRow" aria-live="polite">
+                <div class="result-preview" id="previewWrap">
+                    <img
+                        id="resultImg"
+                        width="100"
+                        height="100"
+                        alt="result preview"
+                        style="display: block; object-fit: cover; min-width: 100%; min-height: 100%"
+                    />
+                </div>
+                <div>
+                    <div class="meta" id="meta">Converted: —</div>
+                    <div style="margin-top: 10px; display: flex; gap: 8px">
+                        <a id="downloadLink" href="#" download="image.webp"
+                            ><button id="downloadBtn">Download WebP</button></a
+                        >
+                        <button id="openNew" class="secondary">Open in new tab</button>
+                    </div>
+                </div>
+            </div>
+
+            <footer>
+                Implementation uses a simple corner-based background color detection + per-pixel
+                alpha threshold. It is intentionally lightweight and client-side.
+            </footer>
+        </div>
+
+        <script>
+            /*
+  Behavior:
+  - Listen for paste events
+  - If clipboard contains image (file or image/png etc) or an image URL, fetch/load it
+  - Draw it to an offscreen canvas with 'cover' behavior (center + crop) at 100x100
+  - Remove background by sampling corner colors and making pixels within threshold transparent
+  - Export to WebP and show result with download button
+*/
+
+            const dropzone = document.getElementById('dropzone');
+            const sample = document.getElementById('sample');
+            const errorEl = document.getElementById('error');
+            const thresholdInput = document.getElementById('threshold');
+            const thVal = document.getElementById('thVal');
+            const resultRow = document.getElementById('resultRow');
+            const resultImg = document.getElementById('resultImg');
+            const downloadLink = document.getElementById('downloadLink');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const openNew = document.getElementById('openNew');
+            const clearBtn = document.getElementById('clear');
+            let lastBlobUrl = null;
+
+            thresholdInput.addEventListener(
+                'input',
+                () => (thVal.textContent = thresholdInput.value)
+            );
+
+            clearBtn.addEventListener('click', () => {
+                hideResult();
+                resetError();
+            });
+
+            function resetError() {
+                errorEl.classList.add('hidden');
+                errorEl.textContent = '';
+            }
+            function showError(msg) {
+                errorEl.textContent = msg;
+                errorEl.classList.remove('hidden');
+            }
+
+            function hideResult() {
+                resultRow.classList.add('hidden');
+                if (lastBlobUrl) {
+                    URL.revokeObjectURL(lastBlobUrl);
+                    lastBlobUrl = null;
+                }
+                resultImg.src = '';
+                downloadLink.href = '#';
+                downloadLink.removeAttribute('download');
+            }
+
+            async function handlePasteEvent(e) {
+                resetError();
+                if (!e.clipboardData) return;
+
+                // 1) Check for image file in clipboard
+                const items = [...e.clipboardData.items];
+                // Prefer image file if available
+                const imageItem = items.find((it) => it.type.startsWith('image/'));
+                if (imageItem) {
+                    const blob = imageItem.getAsFile();
+                    if (!blob) {
+                        showError('Could not read pasted image file');
+                        return;
+                    }
+                    await processImageBlob(blob);
+                    return;
+                }
+
+                // 2) If no image file, check for text (could be URL or HTML with <img>)
+                const text =
+                    e.clipboardData.getData('text/plain') || e.clipboardData.getData('text/html');
+                if (!text) {
+                    showError('No image data found in paste');
+                    return;
+                }
+
+                // Try to extract URL from text (common cases)
+                const url = extractImageUrl(text);
+                if (url) {
+                    try {
+                        const fetched = await fetchImageAsBlob(url);
+                        if (!fetched) throw new Error('Fetch failed or not an image');
+                        await processImageBlob(fetched);
+                    } catch (err) {
+                        showError('Failed to fetch image URL: ' + (err.message || err));
+                    }
+                    return;
+                }
+
+                showError('Pasted content did not contain an image or image URL.');
+            }
+
+            // Extracts a likely image URL from pasted text/html
+            function extractImageUrl(text) {
+                // If it's a direct URL
+                try {
+                    const trimmed = text.trim();
+                    // quick detection if it's a plain URL
+                    if (/^https?:\/\/\S+\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(trimmed))
+                        return trimmed;
+                    // try to find src="..." in html
+                    const m = text.match(
+                        /src=["']([^"']+\.(png|jpe?g|webp|gif|svg)(\?[^"']*)?)["']/i
+                    );
+                    if (m) return m[1];
+                    // try to find any http(s) link ending with common image ext
+                    const m2 = text.match(
+                        /https?:\/\/[^\s"']+\.(png|jpe?g|webp|gif|svg)(\?[^\s"']*)?/i
+                    );
+                    if (m2) return m2[0];
+                } catch (e) {}
+                return null;
+            }
+
+            // Fetch URL and return a Blob if content-type is image/*
+            async function fetchImageAsBlob(url) {
+                const res = await fetch(url, { mode: 'cors' });
+                if (!res.ok) throw new Error('Network response not ok: ' + res.status);
+                const ct = res.headers.get('content-type') || '';
+                if (!ct.startsWith('image/')) {
+                    // If content-type is missing but it's an SVG text, still ok.
+                    const text = await res.text();
+                    if (text.trim().startsWith('<svg')) {
+                        return new Blob([text], { type: 'image/svg+xml' });
+                    }
+                    throw new Error('URL is not an image (content-type: ' + ct + ')');
+                }
+                return await res.blob();
+            }
+
+            // Convert Blob/File to HTMLImageElement via createImageBitmap if possible
+            async function loadImageElementFromBlob(blob) {
+                // For SVG blobs, createImageBitmap may rasterize; fallback to img element for CORS correctness
+                const isSVG = blob.type === 'image/svg+xml' || blob.type === 'image/svg';
+                if ('createImageBitmap' in self && !isSVG) {
+                    try {
+                        const bitmap = await createImageBitmap(blob);
+                        // convert to canvas-backed image element for drawing convenience
+                        const canvas = document.createElement('canvas');
+                        canvas.width = bitmap.width;
+                        canvas.height = bitmap.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(bitmap, 0, 0);
+                        const dataUrl = canvas.toDataURL();
+                        const img = new Image();
+                        img.src = dataUrl;
+                        await img.decode();
+                        return img;
+                    } catch (e) {
+                        // fallthrough
+                    }
+                }
+
+                // Fallback: create <img> with object URL
+                const url = URL.createObjectURL(blob);
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.src = url;
+                try {
+                    await img.decode();
+                } finally {
+                    URL.revokeObjectURL(url);
+                }
+                return img;
+            }
+
+            // Process a Blob: draw -> remove bg -> export webp -> show
+            async function processImageBlob(blob) {
+                try {
+                    // Load image
+                    const img = await loadImageElementFromBlob(blob);
+
+                    // Prepare canvas 100x100
+                    const size = 100;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+
+                    // Cover computation (center crop)
+                    const [iw, ih] = [
+                        img.naturalWidth || img.width,
+                        img.naturalHeight || img.height,
+                    ];
+                    if (!iw || !ih) throw new Error('Invalid image dimensions');
+
+                    const scale = Math.max(size / iw, size / ih);
+                    const sw = size / scale;
+                    const sh = size / scale;
+                    const sx = (iw - sw) / 2;
+                    const sy = (ih - sh) / 2;
+
+                    // Draw image into canvas using drawImage with source rect
+                    ctx.clearRect(0, 0, size, size);
+                    // drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh)
+                    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, size, size);
+
+                    // Background removal: sample corners to estimate background color
+                    const imageData = ctx.getImageData(0, 0, size, size);
+                    const pixels = imageData.data;
+                    const bgColor = estimateBackgroundColor(pixels, size, size);
+                    const threshold = Number(thresholdInput.value) || 60;
+
+                    ctx.putImageData(imageData, 0, 0);
+
+                    // Convert to WebP blob
+                    const blobWebp = await canvasToWebPBlob(canvas, 0.9);
+                    if (!blobWebp) throw new Error('Export to WebP not supported in this browser.');
+
+                    // Build object URL and show
+                    if (lastBlobUrl) {
+                        URL.revokeObjectURL(lastBlobUrl);
+                        lastBlobUrl = null;
+                    }
+                    lastBlobUrl = URL.createObjectURL(blobWebp);
+                    resultImg.src = lastBlobUrl;
+                    downloadLink.href = lastBlobUrl;
+                    downloadLink.download = 'image.webp';
+                    resultRow.classList.remove('hidden');
+                    sample.innerHTML =
+                        '<div style="font-size:12px;color:var(--muted)">Pasted & converted</div>';
+                    const kb = Math.round(blobWebp.size / 1024);
+                    document.getElementById(
+                        'meta'
+                    ).textContent = `Format: image/webp · ${size}×${size}px · ${kb} KB`;
+                    openNew.onclick = () => window.open(lastBlobUrl, '_blank');
+                } catch (err) {
+                    console.error(err);
+                    showError(String(err));
+                }
+            }
+
+            // canvas.toBlob wrapper for webp
+            function canvasToWebPBlob(canvas, quality = 0.9) {
+                return new Promise((resolve) => {
+                    if (canvas.toBlob) {
+                        try {
+                            canvas.toBlob((blob) => resolve(blob), 'image/webp', quality);
+                        } catch (e) {
+                            resolve(null);
+                        }
+                    } else {
+                        resolve(null);
+                    }
+                });
+            }
+
+            // Estimate background color by averaging pixels from 4 corner blocks
+            function estimateBackgroundColor(pixels, w, h) {
+                // sample size per corner (in pixels)
+                const sample = 6;
+                const corners = [
+                    { x: 0, y: 0 },
+                    { x: w - sample, y: 0 },
+                    { x: 0, y: h - sample },
+                    { x: w - sample, y: h - sample },
+                ];
+                const acc = [0, 0, 0];
+                let count = 0;
+                for (const c of corners) {
+                    for (let y = c.y; y < c.y + sample && y < h; y++) {
+                        for (let x = c.x; x < c.x + sample && x < w; x++) {
+                            const idx = (y * w + x) * 4;
+                            const r = pixels[idx],
+                                g = pixels[idx + 1],
+                                b = pixels[idx + 2],
+                                a = pixels[idx + 3];
+                            // only consider mostly opaque pixels
+                            if (a < 16) continue;
+                            acc[0] += r;
+                            acc[1] += g;
+                            acc[2] += b;
+                            count++;
+                        }
+                    }
+                }
+                if (count === 0) return [255, 255, 255];
+                return acc.map((v) => Math.round(v / count));
+            }
+
+            // Apply alpha mask: if pixel color is within threshold distance to bgColor -> transparent
+            function applyAlphaMask(pixels, bgColor, threshold) {
+                const [br, bg, bb] = bgColor;
+                const t2 = threshold * threshold;
+                for (let i = 0; i < pixels.length; i += 4) {
+                    const r = pixels[i],
+                        g = pixels[i + 1],
+                        b = pixels[i + 2],
+                        a = pixels[i + 3];
+                    // if already mostly transparent, skip
+                    if (a < 8) {
+                        pixels[i + 3] = 0;
+                        continue;
+                    }
+                    const dr = r - br,
+                        dg = g - bg,
+                        db = b - bb;
+                    const dist2 = dr * dr + dg * dg + db * db;
+                    if (dist2 <= t2) {
+                        // make transparent but preserve soft edges: scale alpha by distance ratio
+                        // compute ratio [0..1] where 0 = identical (fully transparent), 1 = at threshold (keep)
+                        const ratio = dist2 / Math.max(t2, 1);
+                        // new alpha = original alpha * ratio
+                        pixels[i + 3] = Math.round(a * ratio);
+                    }
+                    // else keep as-is
+                }
+            }
+
+            // Event listeners
+            document.addEventListener('paste', (e) => {
+                e.preventDefault();
+                handlePasteEvent(e);
+            });
+
+            // Also allow drop of files/URLs to improve UX
+            dropzone.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                resetError();
+                const dt = e.dataTransfer;
+                if (!dt) return;
+                if (dt.files && dt.files.length) {
+                    await processImageBlob(dt.files[0]);
+                    return;
+                }
+                const url = dt.getData('text/uri-list') || dt.getData('text/plain');
+                if (url) {
+                    const imageUrl = extractImageUrl(url);
+                    if (imageUrl) {
+                        try {
+                            const blob = await fetchImageAsBlob(imageUrl);
+                            await processImageBlob(blob);
+                        } catch (err) {
+                            showError('Failed to fetch dropped image URL: ' + err.message);
+                        }
+                        return;
+                    }
+                }
+                showError('Dropped content not recognized as an image.');
+            });
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.style.outline = '2px solid rgba(6,182,212,0.12)';
+            });
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.style.outline = 'none';
+            });
+
+            // keyboard focus hint
+            dropzone.addEventListener(
+                'focus',
+                () => (dropzone.style.boxShadow = '0 0 0 3px rgba(6,182,212,0.06)')
+            );
+            dropzone.addEventListener('blur', () => (dropzone.style.boxShadow = 'none'));
+
+            // small UX: allow clicking the sample to open file picker
+            sample.addEventListener('click', async () => {
+                resetError();
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = async () => {
+                    if (input.files && input.files[0]) await processImageBlob(input.files[0]);
+                };
+                input.click();
+            });
+        </script>
+    </body>
+</html>
