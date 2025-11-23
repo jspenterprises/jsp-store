@@ -24,18 +24,22 @@ main {
             );
         }
         .content {
-          background-color: color-mix(in srgb, var(--secondary-400) 5%, transparent);
-          padding: 12px 16px;
+            background-color: color-mix(in srgb, var(--secondary-400) 5%, transparent);
+            padding: 12px 16px;
 
-          input[type=checkbox] {
-            margin-right: 0.5em;
-          }
+            input[type='checkbox'] {
+                margin-right: 0.5em;
+            }
 
-          label {
-            display: block;
-            cursor: pointer;
-            color: color-mix(in srgb, currentColor 80%, transparent);
-          }
+            li:not(:last-child) {
+                margin-bottom: 0.25em;
+            }
+
+            label {
+                display: block;
+                cursor: pointer;
+                color: color-mix(in srgb, currentColor 80%, transparent);
+            }
         }
     }
 
