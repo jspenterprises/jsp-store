@@ -30,12 +30,9 @@ const templates = {
                             name="q"
                             placeholder="Search for parts"
                             id="search"
-                            value="${
-                                new URLSearchParams(window.location.search).get('q')?.trim() || ''
-                            }"
                             required
                         />
-                        <button type="reset" onclick="this.previousElementSibling.focus()">
+                        <button type="reset" onclick="this.previousElementSibling.focus();form.reset()">
                             <i data-lucide="x"></i>
                         </button>
                         <button type="submit">
@@ -50,6 +47,9 @@ const templates = {
                     </a>
                 </div>
             </div>`;
+        /** @type {HTMLInputElement} */
+        const searchElm = headerElm.querySelector('input[type=search]');
+        searchElm.value = new URLSearchParams(window.location.search).get('q')?.trim() || '';
         return headerElm;
     },
     footer: () => {

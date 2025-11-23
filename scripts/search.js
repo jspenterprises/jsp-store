@@ -11,32 +11,24 @@ const ITEMS_PER_PAGE = 10;
 const getStateFromURL = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const q = normalize(urlParams.get('q') || '');
-    const categories = (urlParams.get('category') || '')
-        .split('_')
-        .filter(Boolean)
-        .map(decode);
+    const categories = (urlParams.get('category') || '').split('_').filter(Boolean).map(decode);
+
     const tags = (urlParams.get('tags') || '').split('_').filter(Boolean).map(decode);
     const page = parseInt(urlParams.get('page') || '1', 10);
     return { q, categories, tags, page };
 };
 
 const getFilteredProducts = () => {
-    const {
-        q,
-        categories: selectedCategories,
-        tags: selectedTags,
-    } = getStateFromURL();
+    const { q, categories: selectedCategories, tags: selectedTags } = getStateFromURL();
 
     return products.filter((p) => {
-        if (q && !normalize(`${p.name} ${p.category} ${p.manufacturer} ${p.tags.join(' ')}`).includes(q)) {
+        if (
+            q &&
+            !normalize(`${p.name} ${p.category} ${p.manufacturer} ${p.tags.join(' ')}`).includes(q)
+        )
             return false;
-        }
-        if (selectedCategories.length && !selectedCategories.includes(p.category)) {
-            return false;
-        }
-        if (selectedTags.length && !selectedTags.every((tag) => p.tags.includes(tag))) {
-            return false;
-        }
+        if (selectedCategories.length && !selectedCategories.includes(p.category)) return false;
+        if (selectedTags.length && !selectedTags.some((tag) => p.tags.includes(tag))) return false;
         return true;
     });
 };
@@ -57,33 +49,21 @@ const updateURLParams = (params) => {
     window.dispatchEvent(new Event('filtersChanged'));
 };
 
-
 const handleCategoryChange = (event) => {
     const { checked, value } = event.target;
     const { categories } = getStateFromURL();
-
-    const newCategories = checked
-        ? [...categories, value]
-        : categories.filter((c) => c !== value);
-
+    const newCategories = checked ? [...categories, value] : categories.filter((c) => c !== value);
     updateURLParams({ category: newCategories, page: 1 });
 };
 
 const handleTagChange = (event) => {
     const { checked, value } = event.target;
     const { tags } = getStateFromURL();
-
-    const allTagCheckboxes = document.querySelectorAll(
-        `input[type="checkbox"][value="${value}"]`
-    );
+    const allTagCheckboxes = document.querySelectorAll(`input[type="checkbox"][value="${value}"]`);
     allTagCheckboxes.forEach((checkbox) => {
         checkbox.checked = checked;
     });
-
-    const newTags = checked
-        ? [...new Set([...tags, value])]
-        : tags.filter((t) => t !== value);
-
+    const newTags = checked ? [...new Set([...tags, value])] : tags.filter((t) => t !== value);
     updateURLParams({ tags: newTags, page: 1 });
 };
 
@@ -92,10 +72,16 @@ const createCategoryFilter = (categories, selectedCategories) => {
     details.open = true;
     const summary = document.createElement('summary');
     summary.textContent = 'Category';
+    summary.dataset.filterKey = 'category';
+    if (selectedCategories.length > 0) {
+        const count = document.createElement('span');
+        count.className = 'filter-count';
+        count.textContent = selectedCategories.length;
+        summary.appendChild(count);
+    }
     const content = document.createElement('div');
     content.className = 'content';
     const ul = document.createElement('ul');
-
     categories.forEach((category) => {
         const li = document.createElement('li');
         const label = document.createElement('label');
@@ -109,7 +95,6 @@ const createCategoryFilter = (categories, selectedCategories) => {
         li.appendChild(label);
         ul.appendChild(li);
     });
-
     content.appendChild(ul);
     details.appendChild(summary);
     details.appendChild(content);
@@ -118,18 +103,23 @@ const createCategoryFilter = (categories, selectedCategories) => {
 
 const createTagFilter = (categoriesAndTags, selectedTags) => {
     const tagFiltersContainer = document.createDocumentFragment();
-
     for (const category in categoriesAndTags) {
         const tags = categoriesAndTags[category];
         if (tags.length === 0) continue;
-
         const details = document.createElement('details');
         const summary = document.createElement('summary');
         summary.textContent = category;
+        summary.dataset.filterKey = category;
+        const selectedCount = tags.filter((tag) => selectedTags.includes(tag)).length;
+        if (selectedCount > 0) {
+            const count = document.createElement('span');
+            count.className = 'filter-count';
+            count.textContent = selectedCount;
+            summary.appendChild(count);
+        }
         const content = document.createElement('div');
         content.className = 'content';
         const ul = document.createElement('ul');
-
         tags.forEach((tag) => {
             const li = document.createElement('li');
             const label = document.createElement('label');
@@ -143,7 +133,6 @@ const createTagFilter = (categoriesAndTags, selectedTags) => {
             li.appendChild(label);
             ul.appendChild(li);
         });
-
         content.appendChild(ul);
         details.appendChild(summary);
         details.appendChild(content);
@@ -155,7 +144,14 @@ const createTagFilter = (categoriesAndTags, selectedTags) => {
 const renderFilters = () => {
     const filtersElm = document.querySelector('.filters');
     if (!filtersElm) return;
-    
+    const openStates = new Map();
+    filtersElm.querySelectorAll('details').forEach((details) => {
+        const summary = details.querySelector('summary');
+        const key = summary?.dataset.filterKey;
+        if (key) {
+            openStates.set(key, details.open);
+        }
+    });
     const categoriesAndTags = products.reduce((acc, product) => {
         if (!acc[product.category]) {
             acc[product.category] = new Set();
@@ -163,33 +159,32 @@ const renderFilters = () => {
         product.tags.forEach((tag) => acc[product.category].add(tag));
         return acc;
     }, {});
-
     for (const category in categoriesAndTags) {
         categoriesAndTags[category] = [...categoriesAndTags[category]].sort();
     }
-
     const allCategories = Object.keys(categoriesAndTags).sort();
-
-    const { categories: selectedCategories, tags: selectedTags } =
-        getStateFromURL();
-
+    const { categories: selectedCategories, tags: selectedTags } = getStateFromURL();
     filtersElm.innerHTML = '';
-
     const categoryFilter = createCategoryFilter(allCategories, selectedCategories);
     filtersElm.appendChild(categoryFilter);
-
     const tagFilter = createTagFilter(categoriesAndTags, selectedTags);
     filtersElm.appendChild(tagFilter);
+    filtersElm.querySelectorAll('details').forEach((details) => {
+        const summary = details.querySelector('summary');
+        const key = summary?.dataset.filterKey;
+        if (key && openStates.has(key)) {
+            details.open = openStates.get(key);
+        }
+    });
 };
 
 const paginationElm = document.querySelector('.pagination');
+
 const renderPagination = (totalItems, currentPage) => {
     if (!paginationElm) return;
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
     paginationElm.innerHTML = '';
-
     if (totalPages <= 1) return;
-
     const createButton = (icon, page, disabled) => {
         const button = document.createElement('button');
         button.innerHTML = `<i data-lucide="${icon}"></i>`;
@@ -201,24 +196,32 @@ const renderPagination = (totalItems, currentPage) => {
         }
         return button;
     };
-
     const firstButton = createButton('chevron-first', 1, currentPage === 1);
     const prevButton = createButton('chevron-left', currentPage - 1, currentPage === 1);
     const nextButton = createButton('chevron-right', currentPage + 1, currentPage === totalPages);
     const lastButton = createButton('chevron-last', totalPages, currentPage === totalPages);
-
     const pageInfo = document.createElement('span');
     pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-
     paginationElm.append(firstButton, prevButton, pageInfo, nextButton, lastButton);
     window.lucide.createIcons();
 };
 
 const resultsElm = document.querySelector('.search-results');
+const resultsSummaryElm = document.querySelector('.results-summary');
+
 const updateSearchResults = () => {
-    if (!resultsElm) return;
-    const { page } = getStateFromURL();
+    if (!resultsElm || !resultsSummaryElm) return;
+
+    const { page, q } = getStateFromURL();
     const filteredProducts = getFilteredProducts();
+
+    if (filteredProducts.length === 0) {
+        resultsSummaryElm.textContent = q ? `No results found for "${q}"` : 'No results found';
+    } else {
+        resultsSummaryElm.textContent = `Showing ${filteredProducts.length} result${
+            filteredProducts.length > 1 ? 's' : ''
+        }${q ? ` for "${q}"` : ''}`;
+    }
 
     const startIndex = (page - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
@@ -226,24 +229,24 @@ const updateSearchResults = () => {
 
     resultsElm.replaceChildren();
     paginatedProducts.forEach((p) => {
-        const card = renderTemplate('product-card', {
-            productName: p.name,
-            variant: 'wide',
-        });
+        const card = renderTemplate('product-card', { productName: p.name, variant: 'wide' });
         resultsElm.appendChild(card);
     });
-
     renderPagination(filteredProducts.length, page);
 };
 
 renderFilters();
+
 updateSearchResults();
 
 window.addEventListener('filtersChanged', () => {
+    renderFilters();
+
     updateSearchResults();
 });
 
 window.addEventListener('popstate', () => {
     renderFilters();
+
     updateSearchResults();
 });
