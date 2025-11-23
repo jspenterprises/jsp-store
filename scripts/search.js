@@ -205,7 +205,6 @@ renderFilters();
 updateSearchResults();
 
 window.addEventListener('filtersChanged', () => {
-    renderFilters(); 
     updateSearchResults();
 });
 
