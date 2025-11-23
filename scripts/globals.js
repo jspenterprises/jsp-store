@@ -1,5 +1,5 @@
-import { categoryTags, products } from './products.js';
-import { renderSimpleIcons, renderTemplates } from './templates.js';
+import { renderAllTemplates, renderSimpleIcons } from './templates.js';
+import { categoryTags } from './products.js';
 
 /**
  * @param {number} input
@@ -18,8 +18,8 @@ export const formatRupiah = (input, decimalPlaces = 0) => {
 
 /**
  * @template
- * @param {T[]} array 
- * @param {number} count 
+ * @param {T[]} array
+ * @param {number} count
  * @returns {T[]}
  */
 export const pickRandomElmsNoDupe = (array, count) => {
@@ -35,7 +35,7 @@ export const pickRandomElmsNoDupe = (array, count) => {
     return copy.slice(0, c);
 };
 
-renderTemplates();
+renderAllTemplates();
 renderSimpleIcons();
 lucide.createIcons({
     attrs: {
@@ -54,4 +54,3 @@ window.addEventListener('scroll', updateAtTop);
 
 const debug = document.createElement('pre');
 debug.innerText = JSON.stringify(categoryTags, null, 4);
-

@@ -2,7 +2,7 @@
 import { formatRupiah, pickRandomElmsNoDupe } from './globals.js';
 import { products } from './products.js';
 
-/** @type {Record<string, (elm: HTMLElement | null, data?: Record<string, any>) => HTMLElement>} */
+/** @type {Record<string, (data?: Record<string, any>) => HTMLElement>} */
 const templates = {
     header: () => {
         const headerElm = document.createElement('header');
@@ -30,6 +30,9 @@ const templates = {
                             name="q"
                             placeholder="Search for parts"
                             id="search"
+                            value="${
+                                new URLSearchParams(window.location.search).get('q')?.trim() || ''
+                            }"
                             required
                         />
                         <button type="reset" onclick="this.previousElementSibling.focus()">
@@ -134,18 +137,22 @@ const templates = {
             .join('');
         return productCategoriesElm;
     },
-    'product-card': (elm, data) => {
-        const { productName } = data;
+    'product-card': (data) => {
+        const { productName, variant = 'small' } = data ?? {};
         const product = products.find((p) => p.name === productName);
         if (!product) return;
         const cardElm = document.createElement('a');
         cardElm.href = `/product.html?name=${product.name}`;
+        cardElm.dataset.variant = variant;
         cardElm.innerHTML = `
             <div class="product-image">
                 <img src="/assets/products/${product.name}.webp" alt="${product.name}" />
             </div>
-            <div class="name">${product.name}</div>
-            <div class="price">${formatRupiah(product.price)}</div>
+            <div class="product-details">
+                <div class="name">${product.name}</div>
+                <div class="price">${formatRupiah(product.price)}</div>
+            </div>
+            
         `;
         return cardElm;
     },
@@ -153,20 +160,20 @@ const templates = {
         const recommendedElm = document.createElement('div');
 
         pickRandomElmsNoDupe(products, 10).forEach((p) => {
-            const card = templates['product-card'](null, { productName: p.name });
-            card.classList.add('product-card'); // ensure class is applied
+            const card = renderTemplate('product-card', { productName: p.name });
             recommendedElm.appendChild(card);
         });
 
         return recommendedElm;
     },
-    'home-review': (elm) => {
+    'home-review': (data) => {
+        const { imgsrc, name, message } = data ?? {};
         const reviewCardElm = document.createElement('div');
         reviewCardElm.innerHTML = `
 
             <div class="author">
-                <img src="${elm.dataset.imgsrc}" alt="${elm.dataset.name}">
-                <div class="name">${elm.dataset.name}</div>
+                <img src="${imgsrc}" alt="${name}">
+                <div class="name">${name}</div>
             </div>
             <div class="stars">
                 <i data-lucide="star" fill="currentColor"></i>
@@ -176,22 +183,45 @@ const templates = {
                 <i data-lucide="star" fill="currentColor"></i>
             </div>
             <div class="message">
-                ${elm.dataset.message}
+                ${message}
             </div>
         `;
         return reviewCardElm;
     },
 };
 
-export const renderTemplates = () => {
+/**
+ *
+ * @param {keyof typeof templates} id
+ * @param {Record<string, any>} [data]
+ * @returns
+ */
+export const renderTemplate = (id, data) => {
+    const render = templates[id];
+    if (!render) return;
+
+    const rendered = render(data);
+    if (!rendered) return;
+
+    if (rendered instanceof Element) rendered.classList.add(id);
+    return rendered;
+};
+
+export const renderAllTemplates = () => {
     const nodes = document.querySelectorAll('[data-template]');
     nodes.forEach((node) => {
-        const id = node.dataset.template;
-        const render = templates[id];
-        if (!render) return;
+        if (!(node instanceof HTMLElement)) return;
+        const { template: templateId, templateData } = node.dataset;
 
-        const rendered = render(node);
-        rendered.classList.add(id);
+        let parsedData;
+        try {
+            parsedData = JSON.parse(templateData);
+        } catch (error) {
+            parsedData = undefined;
+        }
+        console.log(templateData, parsedData);
+        const rendered = renderTemplate(templateId, parsedData);
+        if (!rendered) return;
         node.replaceWith(rendered);
     });
 };

@@ -1,8 +1,9 @@
 import { products } from './products.js';
+import { renderTemplate } from './templates.js';
 
 const normalize = (str) => str.toLowerCase().replace(/\s+/g, ' ').trim();
 
-const filterProducts = () => {
+export const filterProducts = () => {
     const urlParams = new URLSearchParams(window.location.search);
 
     const q = normalize(urlParams.get('q') || '');
@@ -43,8 +44,13 @@ const filterProducts = () => {
     });
 };
 
-document.querySelector('main').innerHTML += `<pre>${JSON.stringify(
-    filterProducts(),
-    null,
-    4
-)}</pre>`;
+const resultsElm = document.querySelector('.search-results');
+const updateSearchResults = () => {
+    const filteredProducts = filterProducts();
+    resultsElm.replaceChildren();
+    filteredProducts.forEach((p) => {
+        const card = renderTemplate('product-card', { productName: p.name, variant: 'wide' });
+        resultsElm.appendChild(card);
+    });
+};
+updateSearchResults();
