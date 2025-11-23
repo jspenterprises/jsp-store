@@ -60,17 +60,21 @@ const renderCart = () => {
             <div class="item-image">
                 <img src="/assets/products/${product.name}.webp" alt="${product.name}" />
             </div>
-            <div class="item-details">
-                <div class="item-name">${product.name}</div>
-                <div class="item-price">${formatRupiah(product.price)}</div>
+            <div class="item-info">
+                <div class="item-details">
+                    <a href="/product.html?name=${encodeURIComponent(product.name)}" class="item-name">${product.name}</a>
+                    <div class="item-price">${formatRupiah(product.price)}</div>
+                </div>
+                <div class="item-actions">
+                    <div class="amount-controls">
+                        <button class="decrease-amount"><i data-lucide="minus"></i></button>
+                        <input type="number" value="${item.amount}" min="1" data-product-name="${product.name}" />
+                        <button class="increase-amount"><i data-lucide="plus"></i></button>
+                    </div>
+                    <div class="item-subtotal">${formatRupiah(itemSubtotal)}</div>
+                    <button class="remove-item"><i data-lucide="trash-2"></i></button>
+                </div>
             </div>
-            <div class="amount-controls">
-                <button class="decrease-amount"><i data-lucide="minus"></i></button>
-                <input type="number" value="${item.amount}" min="1" data-product-name="${product.name}" />
-                <button class="increase-amount"><i data-lucide="plus"></i></button>
-            </div>
-            <div class="item-subtotal">${formatRupiah(itemSubtotal)}</div>
-            <button class="remove-item"><i data-lucide="x"></i></button>
         `;
 
         cartItemElm.querySelector('.decrease-amount').addEventListener('click', () => {
