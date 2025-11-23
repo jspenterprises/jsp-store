@@ -12,14 +12,14 @@ const getStateFromURL = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const q = normalize(urlParams.get('q') || '');
     const categories = (urlParams.get('category') || '').split('_').filter(Boolean).map(decode);
-
+    const manufacturers = (urlParams.get('manufacturer') || '').split('_').filter(Boolean).map(decode);
     const tags = (urlParams.get('tags') || '').split('_').filter(Boolean).map(decode);
     const page = parseInt(urlParams.get('page') || '1', 10);
-    return { q, categories, tags, page };
+    return { q, categories, manufacturers, tags, page };
 };
 
 const getFilteredProducts = () => {
-    const { q, categories: selectedCategories, tags: selectedTags } = getStateFromURL();
+    const { q, categories: selectedCategories, manufacturers: selectedManufacturers, tags: selectedTags } = getStateFromURL();
 
     return products.filter((p) => {
         if (
@@ -28,6 +28,7 @@ const getFilteredProducts = () => {
         )
             return false;
         if (selectedCategories.length && !selectedCategories.includes(p.category)) return false;
+        if (selectedManufacturers.length && !selectedManufacturers.includes(p.manufacturer)) return false;
         if (selectedTags.length && !selectedTags.some((tag) => p.tags.includes(tag))) return false;
         return true;
     });
@@ -101,6 +102,46 @@ const createCategoryFilter = (categories, selectedCategories) => {
     return details;
 };
 
+const handleManufacturerChange = (event) => {
+    const { checked, value } = event.target;
+    const { manufacturers } = getStateFromURL();
+    const newManufacturers = checked ? [...manufacturers, value] : manufacturers.filter((m) => m !== value);
+    updateURLParams({ manufacturer: newManufacturers, page: 1 });
+};
+
+const createManufacturerFilter = (manufacturers, selectedManufacturers) => {
+    const details = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.textContent = 'Manufacturer';
+    summary.dataset.filterKey = 'manufacturer';
+    if (selectedManufacturers.length > 0) {
+        const count = document.createElement('span');
+        count.className = 'filter-count';
+        count.textContent = selectedManufacturers.length;
+        summary.appendChild(count);
+    }
+    const content = document.createElement('div');
+    content.className = 'content';
+    const ul = document.createElement('ul');
+    manufacturers.forEach((manufacturer) => {
+        const li = document.createElement('li');
+        const label = document.createElement('label');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = manufacturer;
+        checkbox.checked = selectedManufacturers.includes(manufacturer);
+        checkbox.addEventListener('change', handleManufacturerChange);
+        label.appendChild(checkbox);
+        label.append(manufacturer);
+        li.appendChild(label);
+        ul.appendChild(li);
+    });
+    content.appendChild(ul);
+    details.appendChild(summary);
+    details.appendChild(content);
+    return details;
+};
+
 const createTagFilter = (categoriesAndTags, selectedTags) => {
     const tagFiltersContainer = document.createDocumentFragment();
     for (const category in categoriesAndTags) {
@@ -163,10 +204,13 @@ const renderFilters = () => {
         categoriesAndTags[category] = [...categoriesAndTags[category]].sort();
     }
     const allCategories = Object.keys(categoriesAndTags).sort();
-    const { categories: selectedCategories, tags: selectedTags } = getStateFromURL();
+    const allManufacturers = [...new Set(products.map((p) => p.manufacturer))].sort();
+    const { categories: selectedCategories, manufacturers: selectedManufacturers, tags: selectedTags } = getStateFromURL();
     filtersElm.innerHTML = '';
     const categoryFilter = createCategoryFilter(allCategories, selectedCategories);
     filtersElm.appendChild(categoryFilter);
+    const manufacturerFilter = createManufacturerFilter(allManufacturers, selectedManufacturers);
+    filtersElm.appendChild(manufacturerFilter);
     const tagFilter = createTagFilter(categoriesAndTags, selectedTags);
     filtersElm.appendChild(tagFilter);
     filtersElm.querySelectorAll('details').forEach((details) => {
@@ -208,6 +252,26 @@ const renderPagination = (totalItems, currentPage) => {
 
 const resultsElm = document.querySelector('.search-results');
 const resultsSummaryElm = document.querySelector('.results-summary');
+const clearFiltersBtn = document.querySelector('.clear-filters');
+
+const areFiltersActive = () => {
+    const { q, categories, manufacturers, tags } = getStateFromURL();
+    return q || categories.length > 0 || manufacturers.length > 0 || tags.length > 0;
+};
+
+const toggleClearFiltersBtn = () => {
+    if (!clearFiltersBtn) return;
+    clearFiltersBtn.style.display = areFiltersActive() ? 'flex' : 'none';
+};
+
+const handleClearFilters = () => {
+    updateURLParams({ q: null, category: null, tags: null, page: 1 });
+};
+
+if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener('click', handleClearFilters);
+}
+
 
 const updateSearchResults = () => {
     if (!resultsElm || !resultsSummaryElm) return;
@@ -237,16 +301,19 @@ const updateSearchResults = () => {
 
 renderFilters();
 
-updateSearchResults();
+    updateSearchResults();
+    toggleClearFiltersBtn();
 
 window.addEventListener('filtersChanged', () => {
     renderFilters();
 
-    updateSearchResults();
+        updateSearchResults();
+    toggleClearFiltersBtn();
 });
 
 window.addEventListener('popstate', () => {
     renderFilters();
 
-    updateSearchResults();
+        updateSearchResults();
+    toggleClearFiltersBtn();
 });

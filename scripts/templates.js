@@ -142,7 +142,7 @@ const templates = {
         const product = products.find((p) => p.name === productName);
         if (!product) return;
         const cardElm = document.createElement('a');
-        cardElm.href = `/product.html?name=${product.name}`;
+        cardElm.href = `/product.html?name=${encodeURIComponent(product.name)}`;
         cardElm.dataset.variant = variant;
         cardElm.innerHTML = `
             <div class="product-image">

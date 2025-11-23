@@ -16,7 +16,13 @@
         <main>
             <div class="filters"></div>
             <div class="results-area">
-                <div class="results-summary"></div>
+                <div style="display: flex; justify-content: space-between; align-items: center">
+                    <div class="results-summary"></div>
+                    <button class="clear-filters" style="display: none">
+                        <i data-lucide="x-circle"></i>
+                        <span>Clear filters</span>
+                    </button>
+                </div>
                 <div class="search-results"></div>
                 <div class="pagination"></div>
             </div>

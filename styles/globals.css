@@ -148,6 +148,20 @@ input[type='search']::-webkit-search-results-decoration {
     display: none;
 }
 
+/* For Chrome, Safari, Edge, and Opera */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    /* For Firefox */
+    -moz-appearance: textfield;
+    /* For other browsers (general approach) */
+    appearance: textfield;
+}
+
 input,
 button {
     font: inherit;

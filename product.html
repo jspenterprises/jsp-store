@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Product - JSP Store</title>
+        <link rel="shortcut icon" href="/assets/mascot/icon.svg" type="image/svg+xml" />
+        <link rel="stylesheet" href="/styles/globals.css" />
+        <link rel="stylesheet" href="/styles/product.css" />
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <script type="module" src="/scripts/globals.js" defer></script>
+        <script type="module" src="/scripts/product.js" defer></script>
+    </head>
+    <body>
+        <template data-template="header"></template>
+        <main>
+            <div class="product-container">
+                <div class="product-image">
+                    <img src="" alt="Product image" />
+                </div>
+                <div class="product-info">
+                    <div class="product-details">
+                        <h1 class="product-name"></h1>
+                        <p class="product-manufacturer"></p>
+                        <p class="product-price"></p>
+                        <div class="product-description"></div>
+                    </div>
+                    <form class="product-controls">
+                        <p>Set the quantity</p>
+                        <div class="amount-controls">
+                            <button type="button"><i data-lucide="minus"></i></button>
+                            <input type="number" name="amount" min="1" value="1">
+                            <button type="button"><i data-lucide="plus"></i></button>
+                        </div>
+                        <div class="subtotal">
+                            <div class="label">Subtotal</div>
+                            <div class="price"></div>
+                        </div>
+                        <button class="add-to-cart" type="submit">Add to Cart</button>
+                    </form>
+                </div>
+            </div>
+        </main>
+        <template data-template="footer"></template>
+    </body>
+</html>

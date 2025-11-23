@@ -87,6 +87,28 @@ main {
         font-weight: 600;
     }
 
+    .clear-filters {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        background-color: color-mix(in srgb, var(--secondary-900) 50%, transparent);
+        color: var(--text);
+        cursor: pointer;
+        transition: 0.2s ease background-color;
+
+        &:hover {
+            background-color: var(--secondary-900);
+        }
+
+        i {
+            width: 20px;
+            height: 20px;
+        }
+    }
+
     .search-results {
         display: flex;
         flex-direction: column;
