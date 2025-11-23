@@ -35,6 +35,17 @@ export const pickRandomElmsNoDupe = (array, count) => {
     return copy.slice(0, c);
 };
 
+const updateCartCount = () => {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const totalItems = cart.reduce((sum, item) => sum + item.amount, 0);
+    const cartCountElm = document.querySelector('.cart-count');
+
+    if (cartCountElm) {
+        cartCountElm.textContent = totalItems > 99 ? '99+' : totalItems.toString();
+        cartCountElm.style.display = totalItems > 0 ? 'flex' : 'none';
+    }
+};
+
 renderAllTemplates();
 renderSimpleIcons();
 lucide.createIcons({
@@ -43,6 +54,10 @@ lucide.createIcons({
         height: '1em',
     },
 });
+
+updateCartCount(); // Initial call
+window.addEventListener('storage', updateCartCount); // Update on storage changes
+window.addEventListener('cartUpdated', updateCartCount); // Custom event for internal updates
 
 const updateAtTop = () => {
     const atTop = window.scrollY === 0;

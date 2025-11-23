@@ -81,6 +81,7 @@ const renderProduct = () => {
 
         localStorage.setItem('cart', JSON.stringify(cart));
         alert(`${amount}x ${product.name} added to cart!`);
+        window.dispatchEvent(new Event('cartUpdated')); // Dispatch custom event
         window.location.reload();
     });
 

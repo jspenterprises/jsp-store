@@ -44,6 +44,7 @@ const templates = {
                     <a href="/about.html">About Us</a>
                     <a href="/cart.html" class="cart">
                         <i data-lucide="shopping-cart"></i>
+                        <span class="cart-count"></span>
                     </a>
                 </div>
             </div>`;

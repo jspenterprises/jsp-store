@@ -1,12 +1,11 @@
 main {
-    padding: 24px;
     max-width: 900px;
     margin: 0 auto;
 
     h1 {
         font-size: 32px;
         font-weight: 700;
-        margin-bottom: 24px;
+        margin-top: 0;
     }
 }
 

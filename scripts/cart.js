@@ -22,6 +22,7 @@ const updateCartItemAmount = (productName, newAmount) => {
             cart.splice(itemIndex, 1); // Remove if amount is 0 or less
         }
         saveCart(cart);
+        window.dispatchEvent(new Event('cartUpdated'));
         renderCart();
     }
 };
