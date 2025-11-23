@@ -1,5 +1,6 @@
 import { products } from './products.js';
 import { renderTemplate } from './templates.js';
+import { renderFilters } from './filters.js';
 
 const normalize = (str) => str.toLowerCase().replace(/\s+/g, ' ').trim();
 
@@ -53,4 +54,8 @@ const updateSearchResults = () => {
         resultsElm.appendChild(card);
     });
 };
+
+renderFilters();
 updateSearchResults();
+
+window.addEventListener('filtersChanged', updateSearchResults);

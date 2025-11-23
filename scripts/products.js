@@ -551,6 +551,3 @@ export const products = [
 export const categoryTags = products.reduce((set, p) => set.add(p.category), new Set()).size
     ? [...new Set(products.map((p) => p.category))].sort()
     : [];
-
-    console.log(categoryTags);
-    
