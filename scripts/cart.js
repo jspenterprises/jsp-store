@@ -71,7 +71,6 @@ const renderCart = () => {
                         <input type="number" value="${item.amount}" min="1" data-product-name="${product.name}" />
                         <button class="increase-amount"><i data-lucide="plus"></i></button>
                     </div>
-                    <div class="item-subtotal">${formatRupiah(itemSubtotal)}</div>
                     <button class="remove-item"><i data-lucide="trash-2"></i></button>
                 </div>
             </div>
