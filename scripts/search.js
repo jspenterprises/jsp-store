@@ -6,39 +6,9 @@ const normalize = (str) => str.toLowerCase().replace(/\s+/g, ' ').trim();
 const encode = (str) => str.replace(/\s+/g, '-');
 const decode = (str) => str.replace(/-/g, ' ');
 
-export const filterProducts = () => {
-    const {
-        q,
-        categories: selectedCategories,
-        tags: selectedTags,
-    } = getFiltersFromURL();
+const ITEMS_PER_PAGE = 10;
 
-    return products.filter((p) => {
-        // q search
-        if (q) {
-            const haystack = normalize(
-                `${p.name} ${p.category} ${p.manufacturer} ${p.tags.join(' ')}`
-            );
-            if (!haystack.includes(q)) return false;
-        }
-
-        // category filter
-        if (selectedCategories.length && !selectedCategories.includes(p.category)) {
-            return false;
-        }
-
-        // tag filter
-        if (selectedTags.length) {
-            if (!selectedTags.every((tag) => p.tags.includes(tag))) {
-                return false;
-            }
-        }
-
-        return true;
-    });
-};
-
-const getFiltersFromURL = () => {
+const getStateFromURL = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const q = normalize(urlParams.get('q') || '');
     const categories = (urlParams.get('category') || '')
@@ -46,39 +16,63 @@ const getFiltersFromURL = () => {
         .filter(Boolean)
         .map(decode);
     const tags = (urlParams.get('tags') || '').split('_').filter(Boolean).map(decode);
-    return { q, categories, tags };
+    const page = parseInt(urlParams.get('page') || '1', 10);
+    return { q, categories, tags, page };
 };
 
-const updateURL = (key, value) => {
+const getFilteredProducts = () => {
+    const {
+        q,
+        categories: selectedCategories,
+        tags: selectedTags,
+    } = getStateFromURL();
+
+    return products.filter((p) => {
+        if (q && !normalize(`${p.name} ${p.category} ${p.manufacturer} ${p.tags.join(' ')}`).includes(q)) {
+            return false;
+        }
+        if (selectedCategories.length && !selectedCategories.includes(p.category)) {
+            return false;
+        }
+        if (selectedTags.length && !selectedTags.every((tag) => p.tags.includes(tag))) {
+            return false;
+        }
+        return true;
+    });
+};
+
+const updateURLParams = (params) => {
     const url = new URL(window.location);
-    if (!value || value.length === 0) {
-        url.searchParams.delete(key);
-    } else {
-        const encodedValue = Array.isArray(value)
-            ? value.map(encode).join('_')
-            : encode(value);
-        url.searchParams.set(key, encodedValue);
-    }
+    Object.entries(params).forEach(([key, value]) => {
+        if (value === null || value === undefined || value.length === 0) {
+            url.searchParams.delete(key);
+        } else {
+            const encodedValue = Array.isArray(value)
+                ? value.map(encode).join('_')
+                : encode(String(value));
+            url.searchParams.set(key, encodedValue);
+        }
+    });
     history.pushState({}, '', url);
     window.dispatchEvent(new Event('filtersChanged'));
 };
 
+
 const handleCategoryChange = (event) => {
     const { checked, value } = event.target;
-    const { categories } = getFiltersFromURL();
+    const { categories } = getStateFromURL();
 
     const newCategories = checked
         ? [...categories, value]
         : categories.filter((c) => c !== value);
 
-    updateURL('category', newCategories);
+    updateURLParams({ category: newCategories, page: 1 });
 };
 
 const handleTagChange = (event) => {
     const { checked, value } = event.target;
-    const { tags } = getFiltersFromURL();
+    const { tags } = getStateFromURL();
 
-    // Sync all checkboxes with the same tag value
     const allTagCheckboxes = document.querySelectorAll(
         `input[type="checkbox"][value="${value}"]`
     );
@@ -90,7 +84,7 @@ const handleTagChange = (event) => {
         ? [...new Set([...tags, value])]
         : tags.filter((t) => t !== value);
 
-    updateURL('tags', newTags);
+    updateURLParams({ tags: newTags, page: 1 });
 };
 
 const createCategoryFilter = (categories, selectedCategories) => {
@@ -177,7 +171,7 @@ const renderFilters = () => {
     const allCategories = Object.keys(categoriesAndTags).sort();
 
     const { categories: selectedCategories, tags: selectedTags } =
-        getFiltersFromURL();
+        getStateFromURL();
 
     filtersElm.innerHTML = '';
 
@@ -188,17 +182,58 @@ const renderFilters = () => {
     filtersElm.appendChild(tagFilter);
 };
 
+const paginationElm = document.querySelector('.pagination');
+const renderPagination = (totalItems, currentPage) => {
+    if (!paginationElm) return;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    paginationElm.innerHTML = '';
+
+    if (totalPages <= 1) return;
+
+    const createButton = (icon, page, disabled) => {
+        const button = document.createElement('button');
+        button.innerHTML = `<i data-lucide="${icon}"></i>`;
+        button.disabled = disabled;
+        if (!disabled) {
+            button.addEventListener('click', () => {
+                updateURLParams({ page: page });
+            });
+        }
+        return button;
+    };
+
+    const firstButton = createButton('chevron-first', 1, currentPage === 1);
+    const prevButton = createButton('chevron-left', currentPage - 1, currentPage === 1);
+    const nextButton = createButton('chevron-right', currentPage + 1, currentPage === totalPages);
+    const lastButton = createButton('chevron-last', totalPages, currentPage === totalPages);
+
+    const pageInfo = document.createElement('span');
+    pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+
+    paginationElm.append(firstButton, prevButton, pageInfo, nextButton, lastButton);
+    window.lucide.createIcons();
+};
+
 const resultsElm = document.querySelector('.search-results');
 const updateSearchResults = () => {
-    const filteredProducts = filterProducts();
+    if (!resultsElm) return;
+    const { page } = getStateFromURL();
+    const filteredProducts = getFilteredProducts();
+
+    const startIndex = (page - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+
     resultsElm.replaceChildren();
-    filteredProducts.forEach((p) => {
+    paginatedProducts.forEach((p) => {
         const card = renderTemplate('product-card', {
             productName: p.name,
             variant: 'wide',
         });
         resultsElm.appendChild(card);
     });
+
+    renderPagination(filteredProducts.length, page);
 };
 
 renderFilters();
