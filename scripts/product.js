@@ -1,6 +1,6 @@
 'use strict';
-import { formatRupiah } from './globals.js';
 import { products } from './products.js';
+import { formatRupiah } from './globals.js';
 
 const getProductFromURL = () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -35,7 +35,7 @@ const renderProduct = () => {
     container.querySelector('.product-name').textContent = name;
     container.querySelector(
         '.product-manufacturer'
-    ).innerHTML = `<a href="/search.html?category=${category}">${category}</a> by <a href="/search.html?manufacturer=${manufacturer}">${manufacturer}</a>`;
+    ).innerHTML = `<a href="/search.html?category=${encodeURIComponent(category)}">${category}</a> by <a href="/search.html?manufacturer=${encodeURIComponent(manufacturer)}">${manufacturer}</a>`;
     container.querySelector('.product-price').textContent = formatRupiah(price);
 
     const updateSubtotal = () => {
@@ -89,7 +89,7 @@ const renderProduct = () => {
     const description = `
         <p>
             <strong>Tags:</strong> ${product.tags
-                .map((tag) => `<a href="/search.html?tags=${tag}">${tag}</a>`)
+                .map((tag) => `<a href="/search.html?tags=${encodeURIComponent(tag)}">${tag}</a>`)
                 .join(', ')}
         </p>
     `;

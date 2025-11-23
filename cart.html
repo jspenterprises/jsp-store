@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Cart - JSP Store</title>
+        <link rel="shortcut icon" href="/assets/mascot/icon.svg" type="image/svg+xml" />
+        <link rel="stylesheet" href="/styles/globals.css" />
+        <link rel="stylesheet" href="/styles/cart.css" />
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <script type="module" src="/scripts/globals.js" defer></script>
+        <script type="module" src="/scripts/cart.js" defer></script>
+    </head>
+    <body>
+        <template data-template="header"></template>
+        <main>
+            <h1>Your Cart</h1>
+            <div class="cart-items"></div>
+            <div class="cart-summary">
+                <div class="total">
+                    <div class="label">Total</div>
+                    <div class="price">Rp 000.000.000</div>
+                </div>
+                <button class="checkout-button">Checkout</button>
+            </div>
+        </main>
+        <template data-template="footer"></template>
+    </body>
+</html>
